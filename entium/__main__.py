@@ -1,5 +1,4 @@
-from pipeline.lib.entium.tiles import convert_tiles
-from pipeline.lib.entium.tileset import convert_hierarchy
+from .converter import convert_tiles, convert_hierarchy
 from argparse import ArgumentParser, ArgumentTypeError, Action
 from enum import Enum
 import os

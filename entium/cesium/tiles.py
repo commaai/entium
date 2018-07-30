@@ -37,19 +37,6 @@ class BatchType(Enum):
   VEC3 = 3
   VEC4 = 4
   
-# Cesium does not support > 16 bit integers, store bytes in alternate
-class EntwineScemaType(Enum):
-  INT8 = BatchComponentType.BYTE 
-  INT16 = BatchComponentType.SHORT
-  UINT8 = BatchComponentType.UNSIGNED_BYTE 
-  UINT16 = BatchComponentType.UNSIGNED_SHORT
-  FLOAT = BatchComponentType.FLOAT
-  #UINT32 = BatchComponentType.FLOAT # Temporarily disabled for lack of webgl support
-  #INT32 = BatchComponentType.FLOAT # Temporarily disabled for lack of webgl support
-  #INT64 = BatchComponentType.DOUBLE # Temporarily disabled for lack of webgl support
-  #UINT64 = BatchComponentType.DOUBLE Temporarily disabled for lack of webgl support 
-  #DOUBLE = BatchComponentType.DOUBLE # Temporarily disabled for lack of webgl support
-
 class Mode(Enum):
   QUANTIZED = 0
   FLOATING_QUANTIZED = 1

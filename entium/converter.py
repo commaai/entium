@@ -1,3 +1,10 @@
+import os
+import json
+import glob
+import numpy as np
+from enum import Enum, IntEnum
+from .cesium.tiles import PointcloudTile, Mode, BatchComponentType, QUANTIZED_ECEF_CONSTANT
+
 def get_tileset_json(header, root_directory, global_meta):
   tileset = {}
 
@@ -79,6 +86,18 @@ def import_entwine_table(input_path, batch_header, groups):
       tile.batch_table.remove('OriginId') # Remove origin ID (artifact from cesium) when present
     return tile
 
+# Cesium does not support > 16 bit integers, store bytes in alternate
+class EntwineScemaType(Enum):
+  INT8 = BatchComponentType.BYTE 
+  INT16 = BatchComponentType.SHORT
+  UINT8 = BatchComponentType.UNSIGNED_BYTE 
+  UINT16 = BatchComponentType.UNSIGNED_SHORT
+  FLOAT = BatchComponentType.FLOAT
+  #UINT32 = BatchComponentType.FLOAT # Temporarily disabled for lack of webgl support
+  #INT32 = BatchComponentType.FLOAT # Temporarily disabled for lack of webgl support
+  #INT64 = BatchComponentType.DOUBLE # Temporarily disabled for lack of webgl support
+  #UINT64 = BatchComponentType.DOUBLE Temporarily disabled for lack of webgl support 
+  #DOUBLE = BatchComponentType.DOUBLE # Temporarily disabled for lack of webgl support
 
 def convert_tiles(input_path, export_path, precision=None, validate=False):
   total_points, total_tiles, high_precision_tiles = 0, 0, 0
