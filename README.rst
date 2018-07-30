@@ -1,3 +1,3 @@
 .. image:: resources/logo.png
   :align: center
-  :width: 50%
+  :width: 40 %
