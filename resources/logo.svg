@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="120px" viewBox="0 0 400 120" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>Artboard</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <circle id="path-1" cx="40.5" cy="40.5" r="40.5"></circle>
+    </defs>
+    <g id="Artboard" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="entium-logo" transform="translate(17.000000, 4.000000)">
+            <g id="ICON" transform="translate(0.000000, 14.000000)">
+                <mask id="mask-2" fill="white">
+                    <use xlink:href="#path-1"></use>
+                </mask>
+                <g id="Mask"></g>
+                <g id="Group" mask="url(#mask-2)">
+                    <g transform="translate(-1.000000, -2.000000)">
+                        <g id="Group" stroke-width="1" fill="none" fill-rule="evenodd">
+                            <path d="M81.7,29.1 C76,29 72.8,32.5 69.9,36.5 C66.6,41.1 63.1,45.6 59.7,50.1 C56.3,54.5 53.8,54.4 50.4,50 C46.4,44.7 42.4,39.3 38.3,34 C33.2,27.5 26,27.6 20.9,34.2 C16.8,39.6 12.7,45 8.6,50.5 C7.3,52.2 5.9,53.5 3.6,53.1 C1.2,52.7 1.3,50.5 1.1,48.9 C-3.3,21.2 18,1.2 39.6,0.1 C59.6,-0.9 74.9,11.6 80.5,25.7 C80.9,26.7 81.2,27.8 81.7,29.1 Z" id="Shape" fill="#63ABDE" fill-rule="nonzero"></path>
+                            <path d="M41.9,83.6 C26.1,83 14.1,76 5.9,62.4 C4.8,60.6 4.7,59.7 7.1,59.2 C9.7,58.7 11.6,56.8 13.2,54.7 C17.2,49.4 21.2,44 25.3,38.7 C28.4,34.6 30.9,34.5 34.1,38.6 C38,43.7 41.9,48.9 45.8,54.1 C51.6,61.7 58.6,61.7 64.5,54 C68.2,49.1 71.9,44.2 75.6,39.3 C76.3,38.4 77,37.5 77.8,36.8 C79,35.6 80.6,35.4 82.1,36 C83.6,36.6 83.7,37.9 83.8,39.3 C85,55 75.9,71.2 61.5,78.8 C55.4,82 48.9,83.6 41.9,83.6 Z" id="Shape" fill="#639F44" fill-rule="nonzero"></path>
+                        </g>
+                        <circle id="Oval" fill="#4F7A38" fill-rule="nonzero" cx="41.8" cy="41.4" r="28"></circle>
+                        <g id="Group" stroke-width="1" fill="none" fill-rule="evenodd" transform="translate(29.000000, 41.000000)">
+                            <path d="M6.7,45.0774194 C12.6,15.5384793 2.3,6.97949309 2.2,6.87511521 L4.4,2.7 C4.8,2.80437788 11.7,5.72695853 14.9,13.7640553 C16.5,11.7808756 18.9,9.90207373 22.5,9.38018433 L24,13.8684332 C24,13.8684332 17.5003412,18.4477723 19.6600463,37.7727049 C19.8963818,39.8874228 20.2364116,42.1787165 20.7,44.6599078 L18.5,47.5824885 L10.7040729,47.5824885 L6.7,45.0774194 Z" id="Shape" fill="#FFFFFF" fill-rule="nonzero"></path>
+                            <path d="M14.1,20 C14.1,20 15.6,12.4 22.8,11.4 C22.8,11.4 12.6026225,15.6658319 17.8026225,42.1658319 C14.7531204,42.3362251 12.5141011,42.4499348 11.0855647,42.5069611 C10.6151103,42.5257413 10.0056434,42.5257413 9.25716385,42.5069611 C15.5571638,12.4069611 3.6,4.9 3.6,4.9 C3.6,4.9 13.2,8.6 14.1,20 Z M0.8,8.6 C0.8,8.6 0.8,8.6 0.7,8.5 C0.7,8.5 3,10.4 4.6,15.4 C6.1,20.2 7.5,29.0229893 4.6,42.8229893 L9.25840633,42.8229893 L15.8,43.249461 L22.1144681,42.4 C17.9144681,20.9 25.2,15.4 25.3,15.3 L23,8.5 L23,6.6 L23,8.5 L22.4,6.7 C19.7,7.1 17.5,8.1 15.8,9.4 C11.6,3 5.6,0.6 5.2,0.5 L0.8,8.6 Z" id="Shape" fill="#4F7A38" fill-rule="nonzero"></path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+            <text id="TEXT" font-family="Ubuntu-Bold, Ubuntu" font-size="86" font-weight="bold" letter-spacing="-2.97000003" fill="#1D2225">
+                <tspan x="92" y="80">entiu</tspan>
+                <tspan x="291.72" y="80">m</tspan>
+            </text>
+            <g id="CREDIT" transform="translate(248.000000, 87.000000)" font-size="10" font-style="expanded">
+                <text id="comma.ai" font-family="MaisonNeueExtendedTRIAL-Demi, Maison Neue Extended TRIAL" font-weight="500" fill="#1D2225">
+                    <tspan x="62" y="10">comma.ai</tspan>
+                </text>
+                <text id="A-project-by" font-family="MaisonNeueExtendedTRIAL-Light, Maison Neue Extended TRIAL" font-weight="300" fill="#6C7D87">
+                    <tspan x="0" y="10">A project by</tspan>
+                </text>
+            </g>
+        </g>
+    </g>
+</svg>
