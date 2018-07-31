@@ -21,6 +21,7 @@ def main():
   parser.add_argument('input', action=FullPaths, type=is_dir, help='The input folder for entwine')
   parser.add_argument('output', action=FullPaths, type=is_dir, help='The output folder for the cesium tilests')
   parser.add_argument('--precision', nargs='?', type=float, default=0.01)
+  parser.add_argument('--threads', type=int, default=1)
   parser.add_argument('--validate', action='store_true')
 
   args = parser.parse_args()

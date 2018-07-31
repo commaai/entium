@@ -1,4 +1,5 @@
 from enum import IntEnum, Enum
+from numpy.lib.recfunctions import merge_arrays
 import numpy as np
 import glob
 import struct
@@ -38,21 +39,22 @@ class BatchType(Enum):
   VEC4 = 4
   
 class Mode(Enum):
-  QUANTIZED = 0
-  FLOATING_QUANTIZED = 1
+  STANDARD = 0
+  QUANTIZED = 1
+  FLOATING_QUANTIZED = 2
   RTC_CENTER = 3
 
 # Required by cesium to properly scale
 # https://github.com/AnalyticalGraphicsInc/3d-tiles/tree/master/TileFormats/PointCloud#quantized-positions
 QUANTIZED_ECEF_CONSTANT = float(pow(2, 16) - 1)
 
-class BatchColumn(object):
+class AbstractColumn(object):
   def __init__(self, name, data):
     self.name = name
     self._data = data
-    self.dtype = self._data.dtype.type if self.count == 1 else self._data.dtype[0].type
+    self.dtype = self._data.dtype.type if self.count() == 1 else self._data.dtype[0].type
 
-    if self.count > 1 and any(map(lambda name: data.dtype[name].type != self.dtype, data.dtype.names)):
+    if self.count() > 1 and any(map(lambda name: data.dtype[name].type != self.dtype, data.dtype.names)):
       info = ', '.join(map(lambda x: x + ' (' + str(data.dtype[x]) + ')', data.dtype.names))
       raise Exception('Datatypes are not matching %s' % info)
 
@@ -66,7 +68,6 @@ class BatchColumn(object):
   def data(self):
     return self._data
 
-  @property
   def count(self):
     return 1 if self._data.dtype.names is None else len(self._data.dtype.names)
   
@@ -76,22 +77,37 @@ class BatchColumn(object):
   def get_size(self):
     return self.data().nbytes
 
+  def get_header(self, offset):
+    raise Exception('get_header has not been implemented!')
+
+
+class BatchColumn(AbstractColumn):
+  def __init__(self, name, data, is_instanced=False):
+    super(AbstractColumn, self).__init__(name, data)
+    self.is_instanced = is_instanced
+
   def get_component_type(self):
     return BatchComponentType(self.dtype)
 
   def get_batch_type(self):
-    return BatchType(self.count)
+    return BatchType(self.count())
 
-  def get_header(self, offset=0):
-    return {
-      self.name: {
+  def get_header(self, offset):
+    if self.is_instanced:
+      if self.count() == 1:
+        content = self._data.tolist()
+      else:
+        content = [ dict(zip(self._data.dtype.names, column)) for column in self._data ]
+    else:
+      content = {
         'byteOffset': offset,
         'componentType': self.get_component_type().name,
         'type': self.get_batch_type().name
       }
-    }
 
-class FeatureColumn(BatchColumn):
+    return { self.name: content }
+
+class FeatureColumn(AbstractColumn):
 
   # Feature types and what is batch_item
   # https://github.com/AnalyticalGraphicsInc/3d-tiles/blob/master/TileFormats/PointCloud/README.md#point-semantics
@@ -105,45 +121,59 @@ class FeatureColumn(BatchColumn):
     'batch_id': 1
   }
 
-  def __init__(self, name, data):
-    BatchColumn.__init__(self, name, data)
-    if self.count != FeatureColumn.TYPES[name]:
-      raise Exception('Expected %d items in %s but recieved %d.' % (FeatureColumn.TYPES[name], name, self.count))
+  def __init__(self, name, data, header_semantics=None):
+    super(AbstractColumn, self).__init__(name, data)
+    
+    if header_semantics is None:
+      header_semantics = {}
 
-  def get_header(self, offset=0):
-    return {
+    if self.count() != FeatureColumn.TYPES[name]:
+      raise Exception('Expected %d items in %s but recieved %d.' % (FeatureColumn.TYPES[name], name, self.count()))
+    
+    self.header_semantics = {}
+
+  def get_header(self, offset):
+    header = {
       self.name.upper(): {
         'byteOffset': offset
       }
     }
 
+    header.update(self.header_semantics)
+
+    return header
+
 class PositionColumn(FeatureColumn):
   def __init__(self, name, data, mode):
-    FeatureColumn.__init__(self, name, data)
+    super(FeatureColumn, self).__init__(name, data)
     self.length = self._data.size # Save the size before transform
     self._data = self._data.view((self.dtype, 3))
     self.mode = mode
 
   def get_header(self, offset):
-    if self.mode is Mode.RTC_CENTER:
+    if self.mode is Mode.RTC_CENTER or self.mode is Mode.STANDARD:
       header = {
-        'RTC_CENTER': self.rtc_point.tolist(),
         'POSITION': {
-          'byteOffset': 0
+          'byteOffset': offset
         }
       }
+
+      if self.mode is Mode.RTC_CENTER:
+        header['RTC_CENTER'] = self.rtc_point.tolist()
+
     else:
       header = {
         'QUANTIZED_VOLUME_SCALE': self.quantized_scale.tolist(),
-        'QUANTIZED_VOLUME_OFFSET': self.bounds['min'].tolist(),
+        'QUANTIZED_VOLUME_OFFSET': self.bounds['min'].tolist()
       }
+
       if self.mode is Mode.FLOATING_QUANTIZED:
         header['FLOATING_POSITION_QUANTIZED'] = {
-          'byteOffset': 0
+          'byteOffset': offset
         }
       else:
         header['POSITION_QUANTIZED'] = {
-          'byteOffset': 0
+          'byteOffset': offset
         }
 
     header['POINTS_LENGTH'] = self.length
@@ -216,34 +246,74 @@ class Table(list):
       item.data().tofile(write_buffer)
       byte_offset += item.get_size()
 
+def create_pointcloud(data, mode, groups=None, reference_columns=None)
+  if groups is None:
+    groups = { 'position': ['X', 'Y', 'Z'] }
+  if mode is None:
+    mode = Mode.STANDARD
+  if reference_columns is None:
+    reference_columns = []
+
+  columns = []
+  def add(name, data):
+    if name == 'position':
+      columns.append(PositionColumn(name, data, mode))
+    elif name in FeatureColumn.TYPES:
+      columns.append(FeatureColumn(name, data))
+    else:
+      columns.append(BatchColumn(name, data))
+
+  # Remap columns based off their groupings
+  grouped = set()
+  for name, columns in groups.iteritems():
+    add(name, data[columns])
+    grouped.update(columns)
+  for column in (set(data.dtype.names) - grouped):
+    add(column, data[column])
+
+  # Find all mapped values and replace it with their mapping
+  if len(reference_columns) > 0:
+    r_columns = []
+    for column in reference_columns:
+      if column not in columns:
+        raise Exception('Column %s does not exist' % column)
+      r_columns.append(columns[columns.index(column)])
+
+    merged_data = merge_arrays([x.data for x in r_columns ], flatten = True, usemask = False)
+    batch_groups = np.unique(merged_data, axis=0)
+
+    for column in r_columns:
+      column.is_instanced = True
+      d_names = column._data.dtypes.names
+      selector = column.count() == 1 ? d_names[0] : d_names
+      column._data = batch_groups[selector]
+
+    batch_ids = np.empty(len(merged_data), dtype=np.int)
+    for c_id, batch_group in enumerate(batch_groups):
+      indicies = np.where(np.all(merged_data == batch_group))
+      batch_ids[indicies] = c_id
+
+    columns.append(FeatureColumn('batch_id', batch_ids, { 'BATCH_LENGTH': len(batch_groups) }))
+
+  return PointcloudTile(columns)
+
 class PointcloudTile(object):
 
-  def __init__(self, data, groups=None, mode=None):
-    if groups is None:
-      groups = { 'position': ['X', 'Y', 'Z'] }
-    if mode is None:
-      mode = Mode.QUANTIZED
+  def __init__(self, columns):
     self.total_points = data.size
     self.position_column = None
     self.feature_table = Table()
     self.batch_table = Table()
 
-    def add(name, data):
-      if name == 'position':
-        self.position_column = PositionColumn(name, data, mode)
-        self.feature_table.insert(0, self.position_column)
-      elif name in FeatureColumn.TYPES:
-        self.feature_table.append(FeatureColumn(name, data))
+    for column in columns:
+      if isinstance(column, PositionColumn):
+        self.position_column = column
+      if isinstance(column, FeatureColumn):
+        self.feature_table.append(column)
+      elif isinstance(column, BatchColumn):
+        self.batch_table.append(column)
       else:
-        self.batch_table.append(BatchColumn(name, data))
-    
-    # Remap columns based off their groupings.
-    grouped = set()
-    for name, columns in groups.iteritems():
-      add(name, data[columns])
-      grouped.update(columns)
-    for column in (set(data.dtype.names) - grouped):
-      add(column, data[column])
+        raise Exception('Unknown column type!')
 
     # Validate the minimum amount of data is present
     if self.position_column is None:

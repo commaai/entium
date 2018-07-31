@@ -52,11 +52,11 @@ class Tile():
 
 class DirectTile(Tile):
 
-  def __init__(self, depth, x, y, z, children=None):
+  def __init__(self, depth, x, y, z, extension='pnts', children=None):
     Tile.__init__(self, depth, x, y, z)
     if children is None:
       children = []
-    self.suffix = suffix
+    self.extension = extension
 
     self.children = children
 
@@ -68,7 +68,7 @@ class DirectTile(Tile):
 
   
   def get_content_url(self):
-    return '%d-%d-%d-%d.%s' % (self.depth, self.x, self.y, self.z, self.suffix)
+    return '%d-%d-%d-%d.%s' % (self.depth, self.x, self.y, self.z, self.extension)
 
 
 class ReferenceTile(Tile):

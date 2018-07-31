@@ -4,6 +4,7 @@ import glob
 import numpy as np
 from enum import Enum, IntEnum
 from .cesium.tiles import PointcloudTile, Mode, BatchComponentType, QUANTIZED_ECEF_CONSTANT
+from .cesium.tileset import DirectTile, ReferenceTile
 
 def get_tileset_json(header, root_directory, global_meta):
   tileset = {}
@@ -81,7 +82,7 @@ def import_entwine_table(input_path, batch_header, groups):
   entwine_header_dtype = np.dtype(map(lambda x: (x['name'], x['type'].value), batch_header))
   with open(input_path, 'rb') as raw_tile:
     content = np.fromfile(raw_tile, dtype=entwine_header_dtype)
-    tile = PointcloudTile(content, groups=groups)
+    tile = PointcloudTile(content, mode=Mode.QUANTIZED, groups=groups)
     if 'OriginId' in tile.batch_table:
       tile.batch_table.remove('OriginId') # Remove origin ID (artifact from cesium) when present
     return tile
@@ -99,30 +100,31 @@ class EntwineScemaType(Enum):
   #UINT64 = BatchComponentType.DOUBLE Temporarily disabled for lack of webgl support 
   #DOUBLE = BatchComponentType.DOUBLE # Temporarily disabled for lack of webgl support
 
+# Get header
+def get_schema_type(name, type):
+  raw_schema_type = str(type).strip().upper()
+  if name in ['X', 'Y', 'Z'] and raw_schema_type == 'DOUBLE':
+    return BatchComponentType.DOUBLE # Allow an exception for the double type for position data
+  if name == 'OriginId':
+    return BatchComponentType.UNSIGNED_INT
+  if raw_schema_type not in EntwineScemaType.__members__:
+    raise Exception('Unknown schema type: %s (%s)' % (raw_schema_type, name))
+  return EntwineScemaType[raw_schema_type].value
+
+def asciify(accum, x):
+  if isinstance(x[1], list):
+    remapped = map(lambda y: y.encode('ascii', 'ignore'), x[1])
+  else:
+    remapped = x[1].encode('ascii', 'ignore')
+  accum[x[0].encode('ascii', 'ignore')] = remapped
+  return accum
+
 def convert_tiles(input_path, export_path, precision=None, validate=False):
   total_points, total_tiles, high_precision_tiles = 0, 0, 0
   with open(os.path.join(input_path, 'entwine.json'), 'r') as meta_file:
     metadata = json.load(meta_file)
-    
-    # Get header
-    def get_schema_type(name, type):
-      raw_schema_type = str(type).strip().upper()
-      if name in ['X', 'Y', 'Z'] and raw_schema_type == 'DOUBLE':
-        return BatchComponentType.DOUBLE # Allow an exception for the double type for position data
-      if name == 'OriginId':
-        return BatchComponentType.UNSIGNED_INT
-      if raw_schema_type not in EntwineScemaType.__members__:
-        raise Exception('Unknown schema type: %s (%s)' % (raw_schema_type, name))
-      return EntwineScemaType[raw_schema_type].value
     header = map(lambda x: { 'name': str(x['name']), 'type': get_schema_type(x['name'], x['type']) }, metadata['schema'])
 
-  def asciify(accum, x):
-    if isinstance(x[1], list):
-      remapped = map(lambda y: y.encode('ascii', 'ignore'), x[1])
-    else:
-      remapped = x[1].encode('ascii', 'ignore')
-    accum[x[0].encode('ascii', 'ignore')] = remapped
-    return accum
   groups = None if 'cesium' not in metadata else reduce(asciify, metadata['cesium'].iteritems(), {})
   for bin_file in glob.iglob(os.path.join(input_path, '*.bin')):
     print('Converting %s' % bin_file)
