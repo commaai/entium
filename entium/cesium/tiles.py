@@ -70,6 +70,12 @@ class AbstractColumn(object):
 
   def count(self):
     return 1 if self._data.dtype.names is None else len(self._data.dtype.names)
+
+  def names(self):
+    if self.count() == 1:
+      return [ self.name ]
+    else:
+      return self._data.dtype.names
   
   def get_itemsize(self):
     return self.data().itemsize
@@ -83,7 +89,7 @@ class AbstractColumn(object):
 
 class BatchColumn(AbstractColumn):
   def __init__(self, name, data, is_instanced=False):
-    super(AbstractColumn, self).__init__(name, data)
+    super(BatchColumn, self).__init__(name, data)
     self.is_instanced = is_instanced
 
   def get_component_type(self):
@@ -122,7 +128,7 @@ class FeatureColumn(AbstractColumn):
   }
 
   def __init__(self, name, data, header_semantics=None):
-    super(AbstractColumn, self).__init__(name, data)
+    super(FeatureColumn, self).__init__(name, data)
     
     if header_semantics is None:
       header_semantics = {}
@@ -145,7 +151,7 @@ class FeatureColumn(AbstractColumn):
 
 class PositionColumn(FeatureColumn):
   def __init__(self, name, data, mode):
-    super(FeatureColumn, self).__init__(name, data)
+    super(PositionColumn, self).__init__(name, data)
     self.length = self._data.size # Save the size before transform
     self._data = self._data.view((self.dtype, 3))
     self.mode = mode
@@ -228,6 +234,7 @@ class Table(list):
       offset += get_padding_bytes(offset, item.get_itemsize())
       table.update(item.get_header(offset))
       offset += item.get_size()
+
     return table
 
   def get_size(self):
@@ -246,13 +253,13 @@ class Table(list):
       item.data().tofile(write_buffer)
       byte_offset += item.get_size()
 
-def create_pointcloud(data, mode, groups=None, reference_columns=None)
+def create_pointcloud(data, mode, groups=None, reference_columns=None):
   if groups is None:
     groups = { 'position': ['X', 'Y', 'Z'] }
   if mode is None:
     mode = Mode.STANDARD
   if reference_columns is None:
-    reference_columns = []
+    reference_columns = [ 'dongleIDA', 'dongleIDB', 'dongleIDC', 'dongleIDD', 'segmentDate', 'segmentTime' ]
 
   columns = []
   def add(name, data):
@@ -263,34 +270,39 @@ def create_pointcloud(data, mode, groups=None, reference_columns=None)
     else:
       columns.append(BatchColumn(name, data))
 
+
   # Remap columns based off their groupings
   grouped = set()
-  for name, columns in groups.iteritems():
-    add(name, data[columns])
-    grouped.update(columns)
+  for name, selection in groups.iteritems():
+    add(name, data[selection])
+    grouped.update(selection)
   for column in (set(data.dtype.names) - grouped):
     add(column, data[column])
 
   # Find all mapped values and replace it with their mapping
   if len(reference_columns) > 0:
-    r_columns = []
+    r_columns, r_names = [], []
     for column in reference_columns:
       if column not in columns:
         raise Exception('Column %s does not exist' % column)
-      r_columns.append(columns[columns.index(column)])
+      r_column = columns[columns.index(column)]
+      r_columns.append(r_column)
+      r_names.extend(r_column.names())
 
-    merged_data = merge_arrays([x.data for x in r_columns ], flatten = True, usemask = False)
+    merged_data = merge_arrays([ x.data() for x in r_columns ], flatten=True, usemask=False)
+    merged_data.dtype.names = r_names
     batch_groups = np.unique(merged_data, axis=0)
 
+    idx_offset = 0
     for column in r_columns:
       column.is_instanced = True
-      d_names = column._data.dtypes.names
-      selector = column.count() == 1 ? d_names[0] : d_names
+      d_names = column.names()
+      selector = d_names[0] if column.count() == 1 else d_names
       column._data = batch_groups[selector]
 
     batch_ids = np.empty(len(merged_data), dtype=np.int)
     for c_id, batch_group in enumerate(batch_groups):
-      indicies = np.where(np.all(merged_data == batch_group))
+      indicies = merged_data == batch_group
       batch_ids[indicies] = c_id
 
     columns.append(FeatureColumn('batch_id', batch_ids, { 'BATCH_LENGTH': len(batch_groups) }))
@@ -300,7 +312,7 @@ def create_pointcloud(data, mode, groups=None, reference_columns=None)
 class PointcloudTile(object):
 
   def __init__(self, columns):
-    self.total_points = data.size
+    self.total_points = -1
     self.position_column = None
     self.feature_table = Table()
     self.batch_table = Table()
@@ -318,6 +330,8 @@ class PointcloudTile(object):
     # Validate the minimum amount of data is present
     if self.position_column is None:
       raise Exception('Position is not present!')
+
+    self.total_points = self.position_column.length
 
   @property
   def points(self):

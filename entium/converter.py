@@ -3,7 +3,7 @@ import json
 import glob
 import numpy as np
 from enum import Enum, IntEnum
-from .cesium.tiles import PointcloudTile, Mode, BatchComponentType, QUANTIZED_ECEF_CONSTANT
+from .cesium.tiles import create_pointcloud, Mode, BatchComponentType, QUANTIZED_ECEF_CONSTANT
 from .cesium.tileset import DirectTile, ReferenceTile
 
 def get_tileset_json(header, root_directory, global_meta):
@@ -82,7 +82,7 @@ def import_entwine_table(input_path, batch_header, groups):
   entwine_header_dtype = np.dtype(map(lambda x: (x['name'], x['type'].value), batch_header))
   with open(input_path, 'rb') as raw_tile:
     content = np.fromfile(raw_tile, dtype=entwine_header_dtype)
-    tile = PointcloudTile(content, mode=Mode.QUANTIZED, groups=groups)
+    tile = create_pointcloud(content, mode=Mode.QUANTIZED, groups=groups)
     if 'OriginId' in tile.batch_table:
       tile.batch_table.remove('OriginId') # Remove origin ID (artifact from cesium) when present
     return tile
