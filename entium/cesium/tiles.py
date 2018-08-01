@@ -136,7 +136,7 @@ class FeatureColumn(AbstractColumn):
     if self.count() != FeatureColumn.TYPES[name]:
       raise Exception('Expected %d items in %s but recieved %d.' % (FeatureColumn.TYPES[name], name, self.count()))
     
-    self.header_semantics = {}
+    self.header_semantics = header_semantics
 
   def get_header(self, offset):
     header = {

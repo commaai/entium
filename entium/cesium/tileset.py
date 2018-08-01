@@ -70,7 +70,6 @@ class DirectTile(Tile):
   def get_content_url(self):
     return '%d-%d-%d-%d.%s' % (self.depth, self.x, self.y, self.z, self.extension)
 
-
 class ReferenceTile(Tile):
 
   def __init__(self, depth, x=0, y=0, z=0):
