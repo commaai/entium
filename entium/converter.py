@@ -78,11 +78,11 @@ def convert_hierarchy(input_path, output_path):
       json.dump(data, outfile, indent=4)
       print('Finished %s' % name)
 
-def import_entwine_table(input_path, batch_header, groups):
+def import_entwine_table(input_path, batch_header, groups, batched):
   entwine_header_dtype = np.dtype(map(lambda x: (x['name'], x['type'].value), batch_header))
   with open(input_path, 'rb') as raw_tile:
     content = np.fromfile(raw_tile, dtype=entwine_header_dtype)
-    tile = create_pointcloud(content, mode=Mode.QUANTIZED, groups=groups)
+    tile = create_pointcloud(content, mode=Mode.QUANTIZED, groups=groups, batch_columns=batched)
     if 'OriginId' in tile.batch_table:
       tile.batch_table.remove('OriginId') # Remove origin ID (artifact from cesium) when present
     return tile
@@ -111,24 +111,16 @@ def get_schema_type(name, type):
     raise Exception('Unknown schema type: %s (%s)' % (raw_schema_type, name))
   return EntwineScemaType[raw_schema_type].value
 
-def asciify(accum, x):
-  if isinstance(x[1], list):
-    remapped = map(lambda y: y.encode('ascii', 'ignore'), x[1])
-  else:
-    remapped = x[1].encode('ascii', 'ignore')
-  accum[x[0].encode('ascii', 'ignore')] = remapped
-  return accum
-
-def convert_tiles(input_path, export_path, precision=None, validate=False):
+def convert_tiles(input_path, export_path, precision=None, validate=False, groups=None, batched=None):
   total_points, total_tiles, high_precision_tiles = 0, 0, 0
   with open(os.path.join(input_path, 'entwine.json'), 'r') as meta_file:
     metadata = json.load(meta_file)
     header = map(lambda x: { 'name': str(x['name']), 'type': get_schema_type(x['name'], x['type']) }, metadata['schema'])
 
-  groups = None if 'cesium' not in metadata else reduce(asciify, metadata['cesium'].iteritems(), {})
+  
   for bin_file in glob.iglob(os.path.join(input_path, '*.bin')):
     print('Converting %s' % bin_file)
-    tile = import_entwine_table(bin_file, header, groups)
+    tile = import_entwine_table(bin_file, header, groups, batched)
   
     points_column = tile.points
     if np.any((tile.bounds['max'] - tile.bounds['min']) / QUANTIZED_ECEF_CONSTANT > precision):

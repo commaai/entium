@@ -253,20 +253,20 @@ class Table(list):
       item.data().tofile(write_buffer)
       byte_offset += item.get_size()
 
-def create_pointcloud(data, mode, groups=None, reference_columns=None):
+def create_pointcloud(data, mode, groups=None, batch_columns=None):
   if groups is None:
     groups = { 'position': ['X', 'Y', 'Z'] }
   if mode is None:
     mode = Mode.STANDARD
-  if reference_columns is None:
-    reference_columns = [ 'dongleIDA', 'dongleIDB', 'dongleIDC', 'dongleIDD', 'segmentDate', 'segmentTime' ]
+  if batch_columns is None:
+    batch_columns = []
 
   columns = []
   def add(name, data):
     if name == 'position':
       columns.append(PositionColumn(name, data, mode))
-    elif name in FeatureColumn.TYPES:
-      columns.append(FeatureColumn(name, data))
+    elif name.lower() in FeatureColumn.TYPES:
+      columns.append(FeatureColumn(name.lower(), data))
     else:
       columns.append(BatchColumn(name, data))
 
@@ -275,14 +275,14 @@ def create_pointcloud(data, mode, groups=None, reference_columns=None):
   grouped = set()
   for name, selection in groups.iteritems():
     add(name, data[selection])
-    grouped.update(selection)
+    grouped.update(selection if isinstance(selection, list) else [selection])
   for column in (set(data.dtype.names) - grouped):
     add(column, data[column])
 
   # Find all mapped values and replace it with their mapping
-  if len(reference_columns) > 0:
+  if len(batch_columns) > 0:
     r_columns, r_names = [], []
-    for column in reference_columns:
+    for column in batch_columns:
       if column not in columns:
         raise Exception('Column %s does not exist' % column)
       r_column = columns[columns.index(column)]
@@ -300,10 +300,12 @@ def create_pointcloud(data, mode, groups=None, reference_columns=None):
       selector = d_names[0] if column.count() == 1 else d_names
       column._data = batch_groups[selector]
 
-    batch_ids = np.empty(len(merged_data), dtype=np.int)
+    batch_ids = np.empty(len(merged_data), dtype=np.uint16)
     for c_id, batch_group in enumerate(batch_groups):
       indicies = merged_data == batch_group
       batch_ids[indicies] = c_id
+
+    print(batch_ids)
 
     columns.append(FeatureColumn('batch_id', batch_ids, { 'BATCH_LENGTH': len(batch_groups) }))
 
