@@ -291,7 +291,8 @@ def create_pointcloud(data, mode, groups=None, batch_columns=None):
 
     merged_data = merge_arrays([ x.data() for x in r_columns ], flatten=True, usemask=False)
     merged_data.dtype.names = r_names
-    batch_groups = np.unique(merged_data, axis=0)
+    batch_groups, batch_ids = np.unique(merged_data, axis=0, return_inverse=True)
+    batch_ids = batch_ids.astype(np.uint16)
 
     idx_offset = 0
     for column in r_columns:
@@ -299,13 +300,6 @@ def create_pointcloud(data, mode, groups=None, batch_columns=None):
       d_names = column.names()
       selector = d_names[0] if column.count() == 1 else d_names
       column._data = batch_groups[selector]
-
-    batch_ids = np.empty(len(merged_data), dtype=np.uint16)
-    for c_id, batch_group in enumerate(batch_groups):
-      indicies = merged_data == batch_group
-      batch_ids[indicies] = c_id
-
-    print(batch_ids)
 
     columns.append(FeatureColumn('batch_id', batch_ids, { 'BATCH_LENGTH': len(batch_groups) }))
 
