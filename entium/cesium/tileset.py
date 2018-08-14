@@ -1,9 +1,9 @@
 import json
-import os
 from math import sqrt
+import os
 
 
-class Tile():
+class Tile(object):
 
   def __init__(self, depth, x, y, z):
     self.x = x
@@ -12,7 +12,7 @@ class Tile():
     self.depth = depth
 
   def get_content_url(self, meta):
-    raise Exception('Must override function!')
+    raise NotImplementedError('Must override function!')
 
   def __repr__(self):
     return '[x %d, y %d, z %d, d %d]' % (self.x, self.y, self.z, self.depth)
@@ -20,9 +20,9 @@ class Tile():
   def _localize_bounds(self, meta, min_size=5000):
     scale_factor = pow(2, self.depth)
     bounds = meta['bounds']
-    dimensions = map(lambda idx: abs(bounds[idx] - bounds[idx + 3]) / scale_factor, range(0, 3))
+    dimensions = [ abs(bounds[idx] - bounds[idx + 3]) / scale_factor for idx in xrange(0, 3) ]
 
-    min_dimensions = map(lambda x: max(min_size, x), dimensions)
+    min_dimensions = [ max(min_size, x) for x in dimensions ]
     return {
       'x': bounds[0] + (dimensions[0] * self.x + (dimensions[0] / 2)),
       'y': bounds[1] + (dimensions[1] * self.y + (dimensions[1] / 2)),
@@ -34,7 +34,7 @@ class Tile():
 
   def get_geometric_error(self, meta):
     bounds = self._localize_bounds(meta)
-    return sqrt(pow(bounds['width'], 2) + pow(bounds['depth'], 2) + pow(bounds['height'], 2)) / 2
+    return sqrt(bounds['width']**2 + bounds['depth']**2 + bounds['height']**2) / 2
 
   def get_json(self, meta):
     bounds = self._localize_bounds(meta)
@@ -57,17 +57,18 @@ class Tile():
 class DirectTile(Tile):
 
   def __init__(self, depth, x, y, z, extension='pnts', children=None):
-    Tile.__init__(self, depth, x, y, z)
+    super(DirectTile, self).__init__(depth, x, y, z)
+
     if children is None:
       children = []
-    self.extension = extension
 
+    self.extension = extension
     self.children = children
 
   def get_json(self, meta):
     serialized = Tile.get_json(self, meta)
     if (len(self.children) > 0):
-      serialized['children'] = map(lambda x: x.get_json(meta), self.children)
+      serialized['children'] = [ x.get_json(meta) for x in self.children ]
     return serialized
 
   

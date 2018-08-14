@@ -1,10 +1,12 @@
-from enum import IntEnum, Enum
-from numpy.lib.recfunctions import merge_arrays
-import numpy as np
 import glob
-import struct
 import json
 import os
+import struct
+
+from enum import IntEnum, Enum
+import numpy as np
+from numpy.lib.recfunctions import merge_arrays
+
 
 def get_padding_bytes(total_bytes, required_multiple):
   if total_bytes % required_multiple != 0:
@@ -54,9 +56,9 @@ class AbstractColumn(object):
     self._data = data
     self.dtype = self._data.dtype.type if self.count() == 1 else self._data.dtype[0].type
 
-    if self.count() > 1 and any(map(lambda name: data.dtype[name].type != self.dtype, data.dtype.names)):
-      info = ', '.join(map(lambda x: x + ' (' + str(data.dtype[x]) + ')', data.dtype.names))
-      raise Exception('Datatypes are not matching %s' % info)
+    if self.count() > 1 and any([ data.dtype[name].type != self.dtype for name in data.dtype.names ]):
+      info = ', '.join([ '%s(%s)' % (x, str(data.dtype[x])) for x in data.dtype.names ])
+      raise ValueError('Datatypes are not matching %s' % info)
 
   def __eq__(self, other):
     if isinstance(other, BatchColumn):
@@ -84,7 +86,7 @@ class AbstractColumn(object):
     return self.data().nbytes
 
   def get_header(self, offset):
-    raise Exception('get_header has not been implemented!')
+    raise NotImplementedError('get_header has not been implemented!')
 
 
 class BatchColumn(AbstractColumn):
@@ -261,7 +263,9 @@ def merge_dicts(x, y):
     z.update(y)  # modifies z with y's keys and values & returns None
     return z
 
-def create_pointcloud(data, mode=Mode.STANDARD, groups=None, batch_columns=None):
+def create_pointcloud(data, mode=None, groups=None, batch_columns=None):
+  if mode is None:
+    mode = Mode.STANDARD
   if groups is None:
     groups = {}
   groups = merge_dicts(DEFAULT_GROUPS, groups)

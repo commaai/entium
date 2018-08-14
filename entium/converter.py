@@ -1,11 +1,13 @@
-import os
-import json
 import glob
+import json
 import logging
-import numpy as np
-from enum import Enum, IntEnum
+import os
+
 from .cesium.tiles import create_pointcloud, Mode, BatchComponentType, QUANTIZED_ECEF_CONSTANT
 from .cesium.tileset import DirectTile, ReferenceTile
+from enum import Enum, IntEnum
+import numpy as np
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +84,7 @@ def convert_hierarchy(input_path, output_path):
       logging.info('Finished %s' % name)
 
 def import_entwine_table(input_path, batch_header, groups, batched):
-  entwine_header_dtype = np.dtype(map(lambda x: (x['name'], x['type'].value), batch_header))
+  entwine_header_dtype = np.dtype([ (x['name'], x['type'].value) for x in batch_header ])
   with open(input_path, 'rb') as raw_tile:
     content = np.fromfile(raw_tile, dtype=entwine_header_dtype)
     tile = create_pointcloud(content, mode=Mode.QUANTIZED, groups=groups, batch_columns=batched)
@@ -118,7 +120,7 @@ def convert_tiles(input_path, export_path, precision=None, validate=False, group
   total_points, total_tiles, high_precision_tiles = 0, 0, 0
   with open(os.path.join(input_path, 'entwine.json'), 'r') as meta_file:
     metadata = json.load(meta_file)
-    header = map(lambda x: { 'name': str(x['name']), 'type': get_schema_type(x['name'], x['type']) }, metadata['schema'])
+    header = [ { 'name': str(x['name']), 'type': get_schema_type(x['name'], x['type']) } for x in metadata['schema'] ]
 
   
   for bin_file in glob.iglob(os.path.join(input_path, '*.bin')):
@@ -144,7 +146,7 @@ def convert_tiles(input_path, export_path, precision=None, validate=False, group
       
       original_points = points_column.data
       distances = np.abs(converted_points - original_points)
-      for idx in range(len(original_points)):
+      for idx in xrange(len(original_points)):
         distance = distances[idx]
         if np.any(distance > 1):
           original = original_points[idx]
@@ -155,10 +157,7 @@ def convert_tiles(input_path, export_path, precision=None, validate=False, group
     total_points += tile.total_points
     total_tiles += 1
 
-  logging.info('\nCompleted Tiling')
-  logging.info('\t- Tiles %s' % "{:,}".format(total_tiles))
-  logging.info('\t- High Precision Tiles %s' % "{:,}".format(high_precision_tiles))
-  logging.info('\t- Points %s' % "{:,}".format(total_points))
-
-  with open(os.path.join(input_path, 'entwine.json'), 'r') as meta_file:
-    meta = json.load(meta_file)
+  logging.info('Completed Tiling')
+  logging.info('\t- Tiles {:,}'.format(total_tiles))
+  logging.info('\t- High Precision Tiles {:,}'.format(high_precision_tiles))
+  logging.info('\t- Points {:,}'.format(total_points))
