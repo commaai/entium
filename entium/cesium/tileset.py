@@ -32,6 +32,10 @@ class Tile():
       'height': min_dimensions[2]
     }
 
+  def get_geometric_error(self, meta):
+    bounds = self._localize_bounds(meta)
+    return sqrt(pow(bounds['width'], 2) + pow(bounds['depth'], 2) + pow(bounds['height'], 2)) / 2
+
   def get_json(self, meta):
     bounds = self._localize_bounds(meta)
     return {
@@ -39,7 +43,7 @@ class Tile():
         'uri': self.get_content_url()
       },
       'refine': 'ADD',
-      'geometricError': sqrt(pow(bounds['width'], 2) + pow(bounds['depth'], 2) + pow(bounds['height'], 2)) / 2,
+      'geometricError': self.get_geometric_error(meta),
       'boundingVolume': {
         'box': [
           bounds['x'], bounds['y'], bounds['z'],     # Center

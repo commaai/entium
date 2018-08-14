@@ -253,11 +253,18 @@ class Table(list):
       item.data().tofile(write_buffer)
       byte_offset += item.get_size()
 
-def create_pointcloud(data, mode, groups=None, batch_columns=None):
+
+DEFAULT_GROUPS = { 'position': ['X', 'Y', 'Z'] }
+
+def merge_dicts(x, y):
+    z = x.copy() # start with x's keys and values
+    z.update(y)  # modifies z with y's keys and values & returns None
+    return z
+
+def create_pointcloud(data, mode=Mode.STANDARD, groups=None, batch_columns=None):
   if groups is None:
-    groups = { 'position': ['X', 'Y', 'Z'] }
-  if mode is None:
-    mode = Mode.STANDARD
+    groups = {}
+  groups = merge_dicts(DEFAULT_GROUPS, groups)
   if batch_columns is None:
     batch_columns = []
 

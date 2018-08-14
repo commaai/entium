@@ -1,8 +1,12 @@
 from .converter import convert_tiles, convert_hierarchy
 from argparse import ArgumentParser, ArgumentTypeError, Action
 from enum import Enum
+import logging
 import json
 import os
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def main():
   parser = ArgumentParser(description='Convert the entwine hierarchy to a cesium tileset')
@@ -58,16 +62,15 @@ def main():
         if 'batched' in config:
           batched = map(lambda y: y.encode('ascii', 'ignore'), config['batched'])
     except Exception as e:
-      print(e)
-      print('Unable to parse config!')
+      logger.error('Unable to parse config!', exc_info=True)
 
   # TODO - Multithread
   if args.mode == 'both' or args.mode == 'tile':
-    print('Converting tiles...')
+    logger.info('Converting tiles...')
     convert_tiles(args.entwine_dir, args.output_dir, args.precision, args.validate, groups, batched)
 
   if args.mode == 'both' or args.mode == 'tileset':
-    print('Generating tileset hierarchy...')
+    logger.info('Generating tileset hierarchy...')
     convert_hierarchy(args.entwine_dir, args.output_dir)
 
 if __name__ == '__main__':

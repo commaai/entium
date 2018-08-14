@@ -13,7 +13,7 @@ Ensure there is an active installation of python on the machine!
 ### Development
 To make modifications or install a development version run:
 ```
-git clone git@github.com:commaai/entium.git
+git clone https://github.com/commaai/entium.git
 cd entium
 pip install .
 ```
