@@ -105,7 +105,7 @@ class BatchColumn(AbstractColumn):
       if self.count() == 1:
         content = self._data.tolist()
       else:
-        content = [ dict(zip(self._data.dtype.names, column)) for column in self._data ]
+        content = { name: self._data[name].tolist() for name in self._data.dtype.names }
     else:
       content = {
         'byteOffset': offset,
