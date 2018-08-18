@@ -11,14 +11,14 @@ project_dir = abspath(dirname(__file__))
 with open(join(project_dir, 'README.md'), encoding='utf-8') as file:
   long_description = file.read()
 
-with open(join('requirements.txt')) as file:
+with open(join(project_dir, 'requirements.txt')) as file:
   required = file.read().splitlines()
 
 setup(
   name='entium',
   version= __version__,
   keywords='cli, entwine, cesium, converter',
-  description='A skeleton command line program in Python.',
+  description='A command line tool to read entwine\'s convert into Cesium 3DTiles',
   long_description=long_description,
   long_description_content_type='text/markdown',
   url='https://github.com/commaai/entium',

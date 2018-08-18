@@ -1,7 +1,4 @@
-<p align="center">
-	<img src="./resources/logo.png" alt="entium" />
-</p>
-
+# entium
 A command line tool to read [entwine's](http://entwine.io) output and convert it into
 [Cesium 3DTiles](https://github.com/AnalyticalGraphicsInc/3d-tiles).
 

@@ -2,7 +2,8 @@ exclude .gitignore
 exclude .coverage
 exclude .travis.yml
 exclude resources
-include README.rst
+include README.md
+include requirements.txt
 include setup.cfg
 prune .cache
 prune .git
