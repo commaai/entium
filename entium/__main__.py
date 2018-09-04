@@ -46,13 +46,10 @@ def main():
 
   groups, batched = None, None
   if args.config is not None:
-    try:
-      with open(args.config, 'r') as config_file:
-        config = json.load(config_file)
+    with open(args.config, 'r') as config_file:
+      config = json.load(config_file)
 
-        groups, batched = cesium_settings_from_entwine_config(config)
-    except Exception as e:
-      logger.error('Unable to parse config!', exc_info=True)
+      groups, batched = cesium_settings_from_entwine_config(config)
 
   # TODO - Multithread
   if args.mode == 'both' or args.mode == 'tile':
