@@ -5,6 +5,7 @@ import os
 
 from . import __version__
 from .converter import convert_tiles, convert_hierarchy
+from .cesium.config import cesium_settings_from_entwine_config
 from enum import Enum
 
 
@@ -32,15 +33,7 @@ def main():
       raise ArgumentTypeError('{0} is not a json file'.format(filename))
 
     return filename
-  
-  def asciify(accum, x):
-    if isinstance(x[1], list):
-      remapped = [ y.encode('ascii', 'ignore') for y in x[1] ]
-    else:
-      remapped = x[1].encode('ascii', 'ignore')
-    accum[x[0].encode('ascii', 'ignore')] = remapped
-    return accum
-  
+
   parser.add_argument('mode', choices=['tileset', 'tile', 'both'])
   parser.add_argument('entwine_dir', action=FullPaths, type=is_dir, help='input folder for entwine')
   parser.add_argument('output_dir', action=FullPaths, type=is_dir, help='output folder for the cesium tilests')
@@ -55,16 +48,9 @@ def main():
   if args.config is not None:
     try:
       with open(args.config, 'r') as config_file:
-        config = json.load(config_file)['cesium']
+        config = json.load(config_file)
 
-        if config is None:
-          raise Exception('cesium is not defined!')
-
-        if 'groups' in config:
-          groups = reduce(asciify, config['groups'].iteritems(), {})
-
-        if 'batched' in config:
-          batched =  [ y.encode('ascii', 'ignore') for y in config['batched'] ]
+        groups, batched = cesium_settings_from_entwine_config(config)
     except Exception as e:
       logger.error('Unable to parse config!', exc_info=True)
 
